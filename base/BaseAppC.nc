@@ -1,4 +1,6 @@
 #include <Timer.h>
+#define NEW_PRINTF_SEMANTICS
+#include "printf.h"
 #include "base.h"
 
 configuration BaseAppC {
@@ -12,6 +14,8 @@ implementation {
   components new TimerMilliC() as BlinkLed2Timer;
   components ActiveMessageC;
   components new AMReceiverC(AM_SENSOR_TO_BASE) as Receive;
+  components PrintfC;
+  components SerialStartC;
 
   App.Boot -> MainC;
   App.Leds -> LedsC;

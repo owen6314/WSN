@@ -14,6 +14,9 @@ module SensorC {
   uses interface Timer<TMilli> as BlinkLed1Timer;
   uses interface Timer<TMilli> as BlinkLed2Timer;
   uses interface Timer<TMilli> as SampleTimer;
+  uses interface Read<uint16_t> as readTemp;
+  uses interface Read<uint16_t> as readHumidity;
+  uses interface Read<uint16_t> as readPhoto;
 }
 implementation {
 
@@ -21,6 +24,10 @@ implementation {
 	message_t pkt;
 	bool transit_busy;
   bool local_busy;
+
+  uint16_t TempData;
+  uint16_t HumidityData;
+  uint16_t PhotoData;
 
   event void Boot.booted() {
     call AMControl.start();
@@ -115,7 +122,10 @@ implementation {
   }
 
   event void SampleTimer.fired() {
-    sendSample(0, 0, 0);
+    call readTemp.read();
+    call readHumidity.read();
+    call readPhoto.read();
+    sendSample(TempData, HumidityData, PhotoData);
   }
 
   event void TransitSend.sendDone(message_t* msg, error_t err) {
@@ -124,5 +134,31 @@ implementation {
 
   event void LocalSend.sendDone(message_t* msg, error_t err) {
     local_busy = FALSE;
+  }
+
+  event void readTemp.readDone(error_t result, uint16_t val) {
+    if (result == SUCCESS){ 
+      val = -40.1+ 0.01*val;
+      TempData = val;
+    }
+    else TempData = 0xffff;
+    //call Leds.led0Toggle();
+  }
+
+  event void readHumidity.readDone(error_t result, uint16_t val) {
+    if (result == SUCCESS){
+      HumidityData = -4 + 4*val/100 + (-28/1000/10000)*(val*val);
+      HumidityData = (TempData-25)*(1/100+8*val/100/1000)+HumidityData;
+    }
+    else HumidityData = 0xffff;
+      //call Leds.led1Toggle();
+    }
+
+  event void readPhoto.readDone(error_t result, uint16_t val) {
+    if (result == SUCCESS){ 
+      PhotoData = val;
+    }
+    else PhotoData = 0xffff;
+    //call Leds.led2Toggle();
   }
 }

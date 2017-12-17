@@ -1,5 +1,6 @@
 #include <Timer.h>
 #include "base.h"
+#include "printf.h"
 
 module BaseC {
 	uses interface Boot;
@@ -16,6 +17,7 @@ implementation {
 	message_t pkt;
 	bool transit_busy;
   bool local_busy;
+
 
   event void Boot.booted() {
     call AMControl.start();
@@ -65,14 +67,29 @@ implementation {
 
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
     blinkLed0();
-		if (len == sizeof(SensorMsg)) {
-      
+
+    if (len == sizeof(SensorMsg)) {
+      if (!transit_busy) {
+        //if (msg == NULL) return;
+        SensorMsg* btrpkt = (SensorMsg*)payload;
+        printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d\n", 
+          btrpkt->node_id, btrpkt->sequence_number, btrpkt->temperature, btrpkt->humidity, btrpkt->light_intensity);
+        printfflush();
+      }
+      //setLeds(btrpkt->counter);
+    }
+    return msg;
+
+    
+		/*if (len == sizeof(SensorMsg)) {
 			if (!transit_busy) {
-				if (msg == NULL) {
-					return;
-				}
+				if (msg == NULL) return;
+btrpkt=(*SensorMsg)payload;
+        //printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d", 
+        //  *(btrpkt->node_id), *(btrpkt->sequence_number), *(btrpkt->temperature), *(btrpkt->humidity), *(btrpkt->light_intensity),);
+        //printfflush();
 			}
 		}
-		return msg;
+		return msg;*/
 	}
 }
