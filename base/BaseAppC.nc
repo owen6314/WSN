@@ -19,6 +19,8 @@ implementation {
   App.Boot -> MainC;
   App.Leds -> LedsC;
 
+  App.SerialControl -> Serial; 
+
   // Serial
   App.UartSend -> Serial;
   App.UartReceive -> Serial.Receive;

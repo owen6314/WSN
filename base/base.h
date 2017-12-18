@@ -24,4 +24,5 @@ typedef nx_struct FreqMsg {
 	nx_uint16_t freq;
 } FreqMsg;
 
+
 #endif

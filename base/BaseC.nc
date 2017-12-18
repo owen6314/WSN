@@ -1,12 +1,13 @@
 #include <Timer.h>
 #include "base.h"
-#include "printf.h"
+//#include "printf.h"
 
 module BaseC {
 	uses {
     interface Boot;
     interface Leds;
     interface SplitControl as RadioControl;
+    interface SplitControl as SerialControl;
     interface AMSend as RadioSend[am_id_t id];
     interface Receive as RadioReceive[am_id_t id];
     //interface Receive as RadioSnoop[am_id_t id];
@@ -39,6 +40,9 @@ implementation {
   message_t  * ONE_NOK uartQueue[UART_QUEUE_LEN];
   uint8_t    uartIn, uartOut;
   bool       uartBusy, uartFull;
+
+  task void uartSendTask();
+  task void radioSendTask();
 
   void dropBlink()
   {
@@ -92,6 +96,8 @@ implementation {
     return receive(msg, payload, len);
   }
 
+  // receive package from other nodes
+  // deliver to PC then
   message_t* receive(message_t *msg, void *payload, uint8_t len) 
   {
     SensorMsg* btrpkt = (SensorMsg*)payload;
@@ -125,19 +131,25 @@ implementation {
       }
       else
       {
-          dropBlink()
+          dropBlink();
       }
     }
     return ret;
   }
 
+  //TODO:
+  // get information from serial
+  // send to other nodes
+  event message_t *UartReceive.receive[am_id_t id](message_t*msg, void* payload, uint8_t len)
+  {
+    message_t *ret = msg;
+    return ret;
+  }
+
+  // send to PC
   task void uartSendTask()
   {
     uint8_t len;
-    am_id_t id;
-    am_addr_t addr, src;
-    message_t* msg;
-    am_group_t grp;
     atomic
       if(uartIn == uartOut && !uartFull)
       {
@@ -162,7 +174,6 @@ implementation {
     }
   }
 
-  // after sending, this will be called
   event void UartSend.sendDone[am_id_t](message_t* msg, error_t error)
   {
     if(error != SUCCESS)
@@ -174,7 +185,7 @@ implementation {
         if(msg == uartQueue[uartOut])
         {
           if(++uartOut >= UART_QUEUE_LEN)
-            uartOut = 0
+            uartOut = 0;
           if(uartFull)
             uartFull = FALSE;
         }
@@ -182,7 +193,7 @@ implementation {
   }
 
 
-
+  // send to other nodes
   task void radioSendTask() {
     uint8_t len;
     am_id_t id;
