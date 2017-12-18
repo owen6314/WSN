@@ -2,8 +2,13 @@
 #define SENSOR_H
 
 #define BLINK_DURATION 10
-#define TIMER_PERIOD_MILLI 50
-#define AM_SENSOR_TO_SENSOR 6
+#define TIMER_PERIOD_MILLI 500
+#define AM_SENSOR2_TO_SENSOR1 6
+
+enum {
+    RADIO_QUEUE_LEN = 12,
+ };
+
 
 typedef nx_struct SensorMsg {
 	nx_uint16_t node_id;
@@ -12,5 +17,9 @@ typedef nx_struct SensorMsg {
 	nx_uint16_t humidity;
 	nx_uint16_t light_intensity;
 } SensorMsg;
+
+typedef nx_struct FreqMsg {
+	nx_uint16_t period;
+} FreqMsg;
 
 #endif
