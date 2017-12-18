@@ -5,7 +5,7 @@
 module BaseC {
 	uses {
     interface Boot;
-	  interface Leds;
+    interface Leds;
     interface SplitControl as RadioControl;
     interface AMSend as RadioSend[am_id_t id];
     interface Receive as RadioReceive[am_id_t id];
@@ -13,20 +13,42 @@ module BaseC {
     interface Packet as RadioPacket;
     interface AMPacket as RadioAMPacket;
 
+
+    interface AMSend as UartSend[am_id_t id];
+    interface Receive as UartReceive[am_id_t id];
+    interface Packet as UartPacket;
+    interface AMPacket as UartAMPacket; 
     interface Timer<TMilli> as ChangeFreqTimer;
   }
 }
 implementation {
 
-	uint16_t counter;
-	message_t pkt;
-	bool transit_busy;
+  uint16_t counter;
+  message_t pkt;
+  bool transit_busy;
   bool local_busy;
-
+  
+  // radio
   message_t  radioQueueBufs[RADIO_QUEUE_LEN];
   message_t  * ONE_NOK radioQueue[RADIO_QUEUE_LEN];
   uint8_t    radioIn, radioOut;
   bool       radioBusy, radioFull;
+  
+  // serial
+  message_t  uartQueueBufs[UART_QUEUE_LEN];
+  message_t  * ONE_NOK uartQueue[UART_QUEUE_LEN];
+  uint8_t    uartIn, uartOut;
+  bool       uartBusy, uartFull;
+
+  void dropBlink()
+  {
+    call Leds.led2Toggle();
+  }
+
+  void failBlink()
+  {
+    call Leds.led2Toggle();
+  }
 
   event void Boot.booted() {
     uint8_t i;
@@ -48,7 +70,13 @@ implementation {
     }
   }
 
+  event void SerialControl.startDone(error_t error) {
+    if (error == SUCCESS) {
+      uartFull = FALSE;
+    }
+  }
   event void RadioControl.stopDone(error_t error) {}
+  event void SerialControl.stopDone(error_t error) {}
 
   uint8_t count = 0;
 
@@ -64,15 +92,96 @@ implementation {
     return receive(msg, payload, len);
   }
 
-  message_t* receive(message_t *msg, void *payload, uint8_t len) {
+  message_t* receive(message_t *msg, void *payload, uint8_t len) 
+  {
     SensorMsg* btrpkt = (SensorMsg*)payload;
     message_t *ret = msg;
-    call Leds.led2Toggle();
-    printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d\n", 
-      btrpkt->node_id, btrpkt->sequence_number, btrpkt->temperature, btrpkt->humidity, btrpkt->light_intensity);
-    printfflush();
+
+    // use printf library to deliver message
+    //call Leds.led2Toggle();
+    //printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d\n", 
+      //btrpkt->node_id, btrpkt->sequence_number, btrpkt->temperature, btrpkt->humidity, btrpkt->light_intensity);
+    //printfflush();
+
+    //send message throught serial
+    atomic
+    {
+      //If message queue is not full, put msg into queue
+      if(!uartFull)
+      {
+        ret = uartQueue[uartIn];
+        uartQueue[uartIn] = msg;
+
+        uartIn = (uartIn + 1) % UART_QUEUE_LEN;
+
+        if(uartIn == uartOut)
+          uartFull = TRUE;
+
+        if(!uartBusy)
+        {
+          post uartSendTask();
+          uartBusy = TRUE;
+        }
+      }
+      else
+      {
+          dropBlink()
+      }
+    }
     return ret;
   }
+
+  task void uartSendTask()
+  {
+    uint8_t len;
+    am_id_t id;
+    am_addr_t addr, src;
+    message_t* msg;
+    am_group_t grp;
+    atomic
+      if(uartIn == uartOut && !uartFull)
+      {
+        uartBusy = FALSE;
+        return;
+      }
+    /* still have some problems here
+    msg = uartQueue[uartOut];
+    call UartPacket.clear(msg);
+    call UartAMPacket.setGroup(msg, 20);
+    if(call UartSend.send[AM_SENSOR_TO_PC])
+    */
+    // TODO
+    if(1)
+    {
+      call Leds.led1Toggle();
+    }
+    else
+    {
+      failBlink();
+      post uartSendTask();
+    }
+  }
+
+  // after sending, this will be called
+  event void UartSend.sendDone[am_id_t](message_t* msg, error_t error)
+  {
+    if(error != SUCCESS)
+    {
+      failBlink();
+    }
+    else
+      atomic
+        if(msg == uartQueue[uartOut])
+        {
+          if(++uartOut >= UART_QUEUE_LEN)
+            uartOut = 0
+          if(uartFull)
+            uartFull = FALSE;
+        }
+        post uartSendTask();
+  }
+
+
 
   task void radioSendTask() {
     uint8_t len;
