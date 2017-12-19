@@ -5,7 +5,7 @@
 #define TIMER_PERIOD_MILLI 100
 #define AM_SENSOR_TO_SENSOR 6
 #define AM_BASE_TO_SENSORS 10
-#define AM_SENSOR_TO_PC 11
+#define AM_BASE_TO_PC 11
 
 enum {
     RADIO_QUEUE_LEN = 12,
