@@ -8,6 +8,7 @@ module BaseC {
     interface Leds;
     interface SplitControl as RadioControl;
     interface SplitControl as SerialControl;
+
     interface AMSend as RadioSend[am_id_t id];
     interface Receive as RadioReceive[am_id_t id];
     interface Packet as RadioPacket;
@@ -17,6 +18,7 @@ module BaseC {
     interface Receive as UartReceive[am_id_t id];
     interface Packet as UartPacket;
     interface AMPacket as UartAMPacket; 
+
     interface Timer<TMilli> as ChangeFreqTimer;
   }
 }
@@ -43,7 +45,8 @@ implementation {
    
   task void uartSendTask();
   task void radioSendTask();
-
+  
+  // 丢包、错误统一亮红灯
   void dropBlink()
   {
     call Leds.led0Toggle();
@@ -57,6 +60,7 @@ implementation {
   event void Boot.booted() 
   {
     uint8_t i;
+
     for(i = 0; i < UART_QUEUE_LEN; i++)
       uartQueue[i] = &uartQueueBufs[i];
     uartIn = uartOut = 0;
@@ -93,35 +97,32 @@ implementation {
   event void SerialControl.stopDone(error_t error) {}
 
   message_t* ONE receive(message_t* ONE msg, void* payload, uint8_t len);
-
+  
+  //指示接收来自sensor的包
   event message_t *RadioReceive.receive[am_id_t id](message_t *msg, void *payload, uint8_t len) 
   {
     call Leds.led2Toggle();
     return receive(msg, payload, len);
   }
   
-  // receive package from other nodes
-  // deliver to PC then
+  //接收包后转发
   message_t* receive(message_t *msg, void *payload, uint8_t len) 
   {
     SensorMsg* btrpkt = (SensorMsg*)payload;
     message_t *ret = msg;
-    call Leds.led2Toggle();
     // use printf library to deliver message
     //printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d\n", 
     //btrpkt->node_id, btrpkt->sequence_number, btrpkt->temperature, btrpkt->humidity, btrpkt->light_intensity);
 
-    //send message throught serial
     atomic
     {
-      //If message queue is not full, put msg into queue
+      //队列已满：丢包
+      //串口busy：重新发送
       if(!uartFull)
       {
         ret = uartQueue[uartIn];
         uartQueue[uartIn] = msg;
-
         uartIn = (uartIn + 1) % UART_QUEUE_LEN;
-
         if(uartIn == uartOut)
           uartFull = TRUE;
 
@@ -137,7 +138,8 @@ implementation {
     return ret;
   }
 
-  // send to PC
+  // 串口发送给PC
+  // 发送成功亮绿灯，失败亮红灯
   task void uartSendTask()
   {
     uint8_t len;
@@ -150,12 +152,17 @@ implementation {
       }
     
     msg = uartQueue[uartOut];
+    //id = call RadioAMPacket.type(msg);
+    addr = call RadioAMPacket.destination(msg);
+    //src = call RadioAMPacket.source(msg);
+    //grp = call RadioAMPacket.group(msg);
     call UartPacket.clear(msg);
-    call UartAMPacket.setGroup(msg, 20);
+    //call UartAMPacket.setSource(msg, src);
+    //call UartAMPacket.setGroup(msg, grp);
     
-    if(call UartSend.send[AM_BASE_TO_PC](AM_BROADCAST_ADDR, msg, len) == SUCCESS)
+    if(call UartSend.send[AM_BASE_TO_PC](addr, msg, len) == SUCCESS)
     {
-      call Leds.led1Toggle();
+      
     }
     else
     {
@@ -166,7 +173,6 @@ implementation {
 
   event void UartSend.sendDone[am_id_t](message_t* msg, error_t error)
   {
-    //call Leds.led2Toggle();
     if(error != SUCCESS)
       failBlink();
     else
@@ -182,7 +188,7 @@ implementation {
   }
 
 //******************************************************************************************************
-    //TODO:
+  //TODO:
   // get information from serial
   // send to other nodes
   event message_t *UartReceive.receive[am_id_t id](message_t*msg, void* payload, uint8_t len)

@@ -26,10 +26,9 @@ implementation {
   App.UartReceive -> Serial.Receive;
   App.UartPacket -> Serial;
   App.UartAMPacket -> Serial;
-
+  
   App.RadioControl -> Radio;
   App.RadioSend -> Radio;
-  //App.RadioSnoop -> Radio.Snoop;
   App.RadioReceive -> Radio.Receive;
   App.RadioPacket -> Radio;
   App.RadioAMPacket -> Radio;
