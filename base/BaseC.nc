@@ -1,6 +1,6 @@
 #include <Timer.h>
 #include "base.h"
-//#include "printf.h"
+#include "printf.h"
 
 module BaseC {
 	uses {
@@ -101,19 +101,21 @@ implementation {
   //指示接收来自sensor的包
   event message_t *RadioReceive.receive[am_id_t id](message_t *msg, void *payload, uint8_t len) 
   {
-    call Leds.led2Toggle();
+    
     return receive(msg, payload, len);
   }
   
   //接收包后转发
   message_t* receive(message_t *msg, void *payload, uint8_t len) 
   {
+    
+
     SensorMsg* btrpkt = (SensorMsg*)payload;
     message_t *ret = msg;
-    // use printf library to deliver message
-    //printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d\n", 
-    //btrpkt->node_id, btrpkt->sequence_number, btrpkt->temperature, btrpkt->humidity, btrpkt->light_intensity);
-
+    //use printf library to deliver message
+    printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d\n", 
+    btrpkt->node_id, btrpkt->sequence_number, btrpkt->temperature, btrpkt->humidity, btrpkt->light_intensity);
+    call Leds.led2Toggle();
     atomic
     {
       //队列已满：丢包
@@ -143,7 +145,10 @@ implementation {
   task void uartSendTask()
   {
     uint8_t len;
+    am_id_t id;
+    am_addr_t addr, src;
     message_t* msg;
+    am_group_t grp;
     atomic
       if(uartIn == uartOut && !uartFull)
       {
@@ -152,17 +157,18 @@ implementation {
       }
     
     msg = uartQueue[uartOut];
-    //id = call RadioAMPacket.type(msg);
+    len = call RadioPacket.payloadLength(msg);
+    id = call RadioAMPacket.type(msg);
     addr = call RadioAMPacket.destination(msg);
-    //src = call RadioAMPacket.source(msg);
-    //grp = call RadioAMPacket.group(msg);
+    src = call RadioAMPacket.source(msg);
+    grp = call RadioAMPacket.group(msg);
     call UartPacket.clear(msg);
-    //call UartAMPacket.setSource(msg, src);
-    //call UartAMPacket.setGroup(msg, grp);
+    call UartAMPacket.setSource(msg, src);
+    call UartAMPacket.setGroup(msg, grp);
     
     if(call UartSend.send[AM_BASE_TO_PC](addr, msg, len) == SUCCESS)
     {
-      
+      call Leds.led1Toggle();
     }
     else
     {

@@ -11,7 +11,7 @@ public class Oscilloscope implements MessageListener
        System.out.println("PC File application run");
        //ile = new File("result.txt");
        // need to specify MoteCom environment variaty
-       mote = new MoteIF(PrintStreamMessenger.err);
+       mote = new MoteIF(BuildSource.makePhoenix("SensorMsg", PrintStreamMessenger.err));
        mote.registerListener(new SensorMsg(), this);
     }
 
@@ -24,7 +24,7 @@ public class Oscilloscope implements MessageListener
           //bufferedWriter.write(omsg.get_id() + " ");
          /// bufferedWriter.write(omsg.get_count() + " ");
           bufferedWriter.write(omsg.get_temperature() + " ");
-          //bufferedWriter.write(omsg.get_humidity() + " ");
+          bufferedWriter.write(omsg.get_humidity() + " ");
           //bufferedWriter.write(omsg.get_light() + " ");
          // bufferedWriter.write(omsg.get_current_time() + " ");
          // bufferedWriter.newLine();
@@ -42,7 +42,7 @@ public class Oscilloscope implements MessageListener
        // System.out.print("id = " + omsg.get_id());
        // System.out.print("count = " + omsg.get_count());
         System.out.print("temperature = " + omsg.get_temperature());
-       // System.out.print("humidity = " + omsg.get_humidity());
+        System.out.print("humidity = " + omsg.get_humidity());
       //  System.out.print("light = " + omsg.get_light());
        /// System.out.print("current_time = " + omsg.get_current_time());
        // System.out.print("token = " + omsg.get_token());
