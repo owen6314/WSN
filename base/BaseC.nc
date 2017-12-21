@@ -2,8 +2,10 @@
 #include "base.h"
 #include "printf.h"
 
-module BaseC {
-	uses {
+module BaseC 
+{
+	uses 
+  {
     interface Boot;
     interface Leds;
     interface SplitControl as RadioControl;
@@ -22,13 +24,12 @@ module BaseC {
     interface Timer<TMilli> as ChangeFreqTimer;
   }
 }
-implementation {
 
+implementation 
+{
   uint8_t count = 0;
   uint16_t counter;
   message_t pkt;
-  bool transit_busy;
-  bool local_busy;
   
   // radio
   message_t  radioQueueBufs[RADIO_QUEUE_LEN];
@@ -108,13 +109,11 @@ implementation {
   //接收包后转发
   message_t* receive(message_t *msg, void *payload, uint8_t len) 
   {
-    
-
-    SensorMsg* btrpkt = (SensorMsg*)payload;
+    //SensorMsg* btrpkt = (SensorMsg*)payload;
     message_t *ret = msg;
     //use printf library to deliver message
-    printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d\n", 
-    btrpkt->node_id, btrpkt->sequence_number, btrpkt->temperature, btrpkt->humidity, btrpkt->light_intensity);
+    //printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d\n", 
+    //btrpkt->node_id, btrpkt->sequence_number, btrpkt->temperature, btrpkt->humidity, btrpkt->light_intensity);
     call Leds.led2Toggle();
     atomic
     {
@@ -166,7 +165,7 @@ implementation {
     call UartAMPacket.setSource(msg, src);
     call UartAMPacket.setGroup(msg, grp);
     
-    if(call UartSend.send[AM_BASE_TO_PC](addr, msg, len) == SUCCESS)
+    if(call UartSend.send[AM_SENSORMSG](addr, msg, len) == SUCCESS)
     {
       call Leds.led1Toggle();
     }
@@ -177,7 +176,7 @@ implementation {
     }
   }
 
-  event void UartSend.sendDone[am_id_t](message_t* msg, error_t error)
+  event void UartSend.sendDone[am_id_t id](message_t* msg, error_t error)
   {
     if(error != SUCCESS)
       failBlink();

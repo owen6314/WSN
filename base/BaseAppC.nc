@@ -1,6 +1,6 @@
 #include <Timer.h>
 #define NEW_PRINTF_SEMANTICS
-//#include "printf.h"
+#include "printf.h"
 #include "base.h"
 
 configuration BaseAppC {
@@ -10,18 +10,18 @@ implementation {
   components LedsC;
   components BaseC as App;
   components ActiveMessageC as Radio;
-  // serial communication
   components SerialActiveMessageC as Serial;
+  //debug
   components PrintfC;
   components SerialStartC;
+  // change frequency
   components new TimerMilliC() as ChangeFreqTimer;
 
   App.Boot -> MainC;
   App.Leds -> LedsC;
 
-  App.SerialControl -> Serial; 
-
   // Serial
+  App.SerialControl -> Serial; 
   App.UartSend -> Serial;
   App.UartReceive -> Serial.Receive;
   App.UartPacket -> Serial;
