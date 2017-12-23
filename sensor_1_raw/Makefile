@@ -1,2 +1,0 @@
-COMPONENT=SensorAppC
-include $(MAKERULES)
