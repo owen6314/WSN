@@ -21,7 +21,6 @@ module BaseC
     interface Packet as UartPacket;
     interface AMPacket as UartAMPacket; 
 
-    interface Timer<TMilli> as ChangeFreqTimer;
   }
 }
 
@@ -80,7 +79,7 @@ implementation
     if (call SerialControl.start() == EALREADY)
       uartFull = FALSE;
 
-    call ChangeFreqTimer.startPeriodic(TIMER_PERIOD_MILLI);
+    //call ChangeFreqTimer.startPeriodic(TIMER_PERIOD_MILLI);
   }
 
   event void RadioControl.startDone(error_t error) 
@@ -96,22 +95,23 @@ implementation
       uartFull = FALSE;
   }
   event void SerialControl.stopDone(error_t error) {}
+//****************************************************************************************************
+// receive from radio, send to Uart
 
   message_t* ONE receive(message_t* ONE msg, void* payload, uint8_t len);
   
   //指示接收来自sensor的包
   event message_t *RadioReceive.receive[am_id_t id](message_t *msg, void *payload, uint8_t len) 
   {
-    
     return receive(msg, payload, len);
   }
   
   //接收包后转发
   message_t* receive(message_t *msg, void *payload, uint8_t len) 
   {
-    //SensorMsg* btrpkt = (SensorMsg*)payload;
     message_t *ret = msg;
     //use printf library to deliver message
+    //SensorMsg* btrpkt = (SensorMsg*)payload;
     //printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d\n", 
     //btrpkt->node_id, btrpkt->sequence_number, btrpkt->temperature, btrpkt->humidity, btrpkt->light_intensity);
     call Leds.led2Toggle();
@@ -193,12 +193,28 @@ implementation
   }
 
 //******************************************************************************************************
-  //TODO:
-  // get information from serial
-  // send to other nodes
+// receive from uart, send to radio
+
   event message_t *UartReceive.receive[am_id_t id](message_t*msg, void* payload, uint8_t len)
   {
     message_t *ret = msg;
+    atomic
+      if(!radioFull)
+      {
+        ret = radioQueue[radioIn];
+        radioQueue[radioIn] = msg;
+        if(++radioIn >= RADIO_QUEUE_LEN)
+          radioIn = 0;
+        if(radioIn == radioOut)
+          radioFull = TRUE;
+        if(!radioBusy)
+        {
+          post radioSendTask();
+          radioBusy = TRUE;
+        }
+      }
+      else
+        dropBlink();
     return ret;
   }
 
@@ -215,30 +231,34 @@ implementation
         radioBusy = FALSE;
         return;
       }
-
     msg = radioQueue[radioOut];
-    call RadioPacket.clear(msg);
-    call RadioAMPacket.setGroup(msg, 20);
+    len = call UartPacket.payloadLength(msg);
+    addr = call UartAMPacket.destination(msg);
+    source = call UartAMPacket.source(msg);
+    id = call UartAMPacket.type(msg);
 
-    if (call RadioSend.send[AM_BASE_TO_SENSORS](AM_BROADCAST_ADDR, msg, sizeof(FreqMsg)) == SUCCESS)
+    call RadioPacket.clear(msg);
+    call RadioAMPacket.setSource(msg, source);
+    if (call RadioSend.send[id](addr, msg, len) == SUCCESS)
     {
-      //call Leds.led2Toggle();
+      call Leds.led1Toggle();
     }
     else
     {
       post radioSendTask();
-      //call Leds.led0Toggle();
+      call Leds.led0Toggle();
     }
   }
 
   event void RadioSend.sendDone[am_id_t id](message_t* msg, error_t error)
   {
-    if (error != SUCCESS) {
-      //call Leds.led0Toggle();
+    if (error != SUCCESS) 
+    {
+      call Leds.led0Toggle();
     }
     else{
-      //call Leds.led2Toggle();
-          atomic if (msg == radioQueue[radioOut])
+      call Leds.led1Toggle();
+      atomic if (msg == radioQueue[radioOut])
       {
         if (++radioOut >= RADIO_QUEUE_LEN)
           radioOut = 0;
@@ -247,35 +267,5 @@ implementation
       }
     }
     post radioSendTask();
-  }
-
-  uint16_t counter_2 = 0;
-  uint16_t freq = 500;
-
-  event void ChangeFreqTimer.fired() 
-  {
-    FreqMsg* btrpkt = (FreqMsg*)(call RadioPacket.getPayload(&pkt, sizeof(FreqMsg)));
-    if (++counter_2 % 40 == 0) 
-    {
-      if(++counter % 2 == 0)
-        freq = 500;
-      else
-        freq = 50;
-    }
-    btrpkt->freq = freq;
-    radioQueue[radioIn] = &pkt;
-    if (++radioIn >= RADIO_QUEUE_LEN)
-      radioIn = 0;
-    if (radioIn == radioOut)
-      radioFull = TRUE;
-    if (!radioBusy)
-    {
-      post radioSendTask();
-        radioBusy = TRUE;
-    }
-    else 
-    {
-
-    }
   }
 }

@@ -31,7 +31,8 @@ implementation
   uint16_t humidity;
   uint16_t light_intensity;
   
-  uint16_t current_sample_period = TIMER_PERIOD_MILLI;
+  uint16_t current_sample_period = DEFAULT_INTERVAL;
+  uint16_t local_version = DEFAULT_VERSION;
   
   // use queue as buffer
   message_t  radioQueueBufs[RADIO_QUEUE_LEN];
@@ -79,44 +80,40 @@ implementation
 
   message_t* receive(message_t *msg, void *payload, uint8_t len) 
   {
-    SensorMsg* btrpkt_sensor;
-    FreqMsg* btrpkt_freq;
+    SensorMsg* btrpkt_receive;
     message_t *ret = msg;
-    if (len == sizeof(FreqMsg)) 
+    
+    //update interval if receive a newer version
+    if (len == sizeof(SensorMsg)) 
     {
-      btrpkt_freq = (FreqMsg*)payload;
-      if (btrpkt_freq->period != current_sample_period)
+      btrpkt_receive = (SensorMsg*)payload;
+      if (btrpkt_receive->version > local_version)
       {
-        current_sample_period = btrpkt_freq->period;
+        local_version = btrpkt_receive->version;
+        current_sample_period = btrpkt_receive->interval;
         call SampleTimer.startPeriodic(current_sample_period);
-        call Leds.led0Toggle();
       }
     }
-    else 
-    {
-      btrpkt_sensor = (SensorMsg*)payload;
-      atomic 
-      {
-        if (!radioFull)
-        {
-          ret = radioQueue[radioIn];
-          radioQueue[radioIn] = msg;
-          radioIn = (radioIn + 1) % RADIO_QUEUE_LEN;
-          if (radioIn == radioOut)
-            radioFull = TRUE;
 
-          if (!radioBusy)
-          {
-            post radioSendTask();
-            radioBusy = TRUE;
-          }
+    atomic 
+    {
+      if (!radioFull)
+      {
+        ret = radioQueue[radioIn];
+        radioQueue[radioIn] = msg;
+        radioIn = (radioIn + 1) % RADIO_QUEUE_LEN;
+        if (radioIn == radioOut)
+          radioFull = TRUE;
+
+        if (!radioBusy)
+        {
+          post radioSendTask();
+          radioBusy = TRUE;
         }
       }
     }
-
     return ret;
   }
-
 
   task void radioSendTask() 
   {
@@ -133,7 +130,7 @@ implementation
     len = call RadioPacket.payloadLength(msg);
 
     if (call RadioSend.send[AM_SENSOR1_TO_BASE](0, msg, sizeof(SensorMsg)) == SUCCESS)
-      call Leds.led1Toggle();
+      call Leds.led2Toggle();
     else
     {
       post radioSendTask();
@@ -164,13 +161,15 @@ implementation
   {
 
     SensorMsg* btrpkt = (SensorMsg*)(call RadioPacket.getPayload(&pkt, sizeof(SensorMsg)));
+    btrpkt->version = local_version;
+    btrpkt->interval = current_sample_period;
     btrpkt->node_id = TOS_NODE_ID;
     btrpkt->sequence_number = counter;
     btrpkt->temperature = temperature;
     btrpkt->humidity = humidity;
     btrpkt->light_intensity = light_intensity;
     btrpkt->current_time = call SampleTimer.getNow();  // time after booting
-    //printf("current_time is %ld.\n", btrpkt->current_time);
+
     counter++;
     radioQueue[radioIn] = &pkt;
     if (++radioIn >= RADIO_QUEUE_LEN)

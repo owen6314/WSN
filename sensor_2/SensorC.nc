@@ -22,7 +22,6 @@ module SensorC
 }
 implementation 
 {
-	
 	message_t pkt;
   bool busy;
 
@@ -32,7 +31,9 @@ implementation
   uint16_t humidity;
   uint16_t light_intensity;
 
-  uint16_t current_sample_period = TIMER_PERIOD_MILLI;
+  uint16_t current_sample_period = DEFAULT_INTERVAL;
+  uint16_t local_version = DEFAULT_VERSION;
+
   message_t  radioQueueBufs[RADIO_QUEUE_LEN];
   message_t  * ONE_NOK radioQueue[RADIO_QUEUE_LEN];
   uint8_t    radioIn, radioOut;
@@ -59,7 +60,7 @@ implementation
     if (error == SUCCESS) 
     {
       radioFull = FALSE;
-      call SampleTimer.startPeriodic(TIMER_PERIOD_MILLI);
+      call SampleTimer.startPeriodic(current_sample_period);
     }
     else
       call RadioControl.start();
@@ -76,58 +77,50 @@ implementation
   
   message_t* receive(message_t *msg, void *payload, uint8_t len) 
   {
-    SensorMsg* btrpkt_sensor;
-    FreqMsg* btrpkt_freq;
+    SensorMsg* btrpkt_receive;
     message_t *ret = msg;
-    if (len == sizeof(FreqMsg)) 
+
+    if (len == sizeof(SensorMsg)) 
     {
-      btrpkt_freq = (FreqMsg*)payload;
-      if (btrpkt_freq->period != current_sample_period) 
+      btrpkt_receive = (SensorMsg*)payload;
+      if (btrpkt_receive->version > local_version)
       {
-        current_sample_period = btrpkt_freq->period;
+        local_version = btrpkt_receive->version;
+        current_sample_period = btrpkt_receive->interval;
         call SampleTimer.startPeriodic(current_sample_period);
-        call Leds.led0Toggle();
       }
     }
-    else 
+    atomic if (!radioFull)
     {
-      btrpkt_sensor = (SensorMsg*)payload;
-      atomic {
-      if (!radioFull)
+      ret = radioQueue[radioIn];
+      radioQueue[radioIn] = msg;
+      radioIn = (radioIn + 1) % RADIO_QUEUE_LEN;
+
+      if (radioIn == radioOut)
+        radioFull = TRUE;
+
+      if (!radioBusy)
       {
-        ret = radioQueue[radioIn];
-        radioQueue[radioIn] = msg;
-
-        radioIn = (radioIn + 1) % RADIO_QUEUE_LEN;
-  
-        if (radioIn == radioOut)
-          radioFull = TRUE;
-
-        if (!radioBusy)
-        {
-          post radioSendTask();
-          radioBusy = TRUE;
-        }
-      }
-      else {
+        post radioSendTask();
+        radioBusy = TRUE;
       }
     }
-  }
     return ret;
   }
 
   event void SampleTimer.fired() 
   {
-    //if(!busy)
-
     SensorMsg* btrpkt = (SensorMsg*)(call RadioPacket.getPayload(&pkt, sizeof(SensorMsg)));
+    btrpkt->version = local_version;
+    btrpkt->interval = current_sample_period;
     btrpkt->node_id = TOS_NODE_ID;
     btrpkt->sequence_number = counter;
     btrpkt->temperature = temperature;
     btrpkt->humidity = humidity;
     btrpkt->light_intensity = light_intensity;
+    btrpkt->current_time = call SampleTimer.getNow();  // time after booting
     counter++;
-    //printf("Not busy.\n");
+
     radioQueue[radioIn] = &pkt;
     if (++radioIn >= RADIO_QUEUE_LEN)
       radioIn = 0;
@@ -136,11 +129,9 @@ implementation
     if (!radioBusy)
     {
       post radioSendTask();
-      printf("Packet send task is post.\n");
       radioBusy = TRUE;
     }
-    //busy = TRUE;
-   // }
+
     // read new data from sensor
     call readTemp.read();
     call readHumidity.read();
@@ -149,8 +140,6 @@ implementation
   task void radioSendTask() 
   {
     uint8_t len;
-    am_id_t id;
-    am_addr_t addr,source;
     message_t* msg;
     atomic 
       if (radioIn == radioOut && !radioFull)
@@ -164,7 +153,7 @@ implementation
 
     if (call RadioSend.send[AM_SENSOR2_TO_SENSOR1](1, msg, sizeof(SensorMsg)) == SUCCESS)
     {
-      call Leds.led1Toggle();
+      call Leds.led2Toggle();
     }
     else
     {
@@ -172,8 +161,7 @@ implementation
       call Leds.led0Toggle();
     }
 
-    // can't delete this line
-    post radioSendTask();
+    
   }
 
   event void RadioSend.sendDone[am_id_t id](message_t* msg, error_t error) 
@@ -191,12 +179,8 @@ implementation
           radioFull = FALSE;
       }
     }
-    // defensive style to verify the sent message is the same one that is being signaled is required
-    if(&pkt == msg)
-    {
-      printf("pkt is verified with msg\n");
-      busy = FALSE;
-    }
+    // can't delete this line
+    post radioSendTask();
   }
 
   event void readTemp.readDone(error_t result, uint16_t val) {

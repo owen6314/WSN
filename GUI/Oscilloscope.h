@@ -3,6 +3,10 @@
 
 enum 
 {
+  /* Number of readings per message. If you increase this, you may have to
+     increase the message_t size. */
+  NREADINGS = 1,
+  DEFAULT_INTERVAL = 1000,
   AM_SENSORMSG = 0x93,
 };
 

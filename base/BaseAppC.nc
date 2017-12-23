@@ -15,7 +15,7 @@ implementation {
   components PrintfC;
   components SerialStartC;
   // change frequency
-  components new TimerMilliC() as ChangeFreqTimer;
+  //components new TimerMilliC() as ChangeFreqTimer;
 
   App.Boot -> MainC;
   App.Leds -> LedsC;
@@ -33,6 +33,6 @@ implementation {
   App.RadioPacket -> Radio;
   App.RadioAMPacket -> Radio;
 
-  App.ChangeFreqTimer -> ChangeFreqTimer;
+  //App.ChangeFreqTimer -> ChangeFreqTimer;
 
 }
