@@ -11,11 +11,10 @@ implementation {
   components BaseC as App;
   components ActiveMessageC as Radio;
   components SerialActiveMessageC as Serial;
+
   //debug
   components PrintfC;
   components SerialStartC;
-  // change frequency
-  //components new TimerMilliC() as ChangeFreqTimer;
 
   App.Boot -> MainC;
   App.Leds -> LedsC;
@@ -32,7 +31,5 @@ implementation {
   App.RadioReceive -> Radio.Receive;
   App.RadioPacket -> Radio;
   App.RadioAMPacket -> Radio;
-
-  //App.ChangeFreqTimer -> ChangeFreqTimer;
 
 }
