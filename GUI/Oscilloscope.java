@@ -48,10 +48,10 @@ public class Oscilloscope implements MessageListener
     int version = -1;
 
     /* Main entry point */
-    void run()
+    void run(int mode)
     {
         data = new Data(this);
-        window = new Window(this);
+        window = new Window(this, mode);
         window.setup();
         mote = new MoteIF(PrintStreamMessenger.err);
         mote.registerListener(new OscilloscopeMsg(), this);
@@ -72,10 +72,14 @@ public class Oscilloscope implements MessageListener
             /* Update interval and mote data */
             periodUpdate(omsg.get_version(), omsg.get_interval());
             SensorData sensorData = new SensorData(omsg.get_temperature(), omsg.get_humidity(), omsg.get_light_intensity());
-            data.update(omsg.get_node_id(), omsg.get_sequence_number(), sensorData);
-            /* Inform the GUI that new data showed up */
-            window.newData();
-            outputMsgToConsole(omsg);
+            //fix the bug of showing what is sent by base station in a very LOW way
+            if(omsg.get_node_id() != 0)
+            {
+                data.update(omsg.get_node_id(), omsg.get_sequence_number(), sensorData);
+                /* Inform the GUI that new data showed up */
+                window.newData();
+                outputMsgToConsole(omsg);
+            }
         }
         else
             System.out.println("GET");
@@ -138,9 +142,9 @@ public class Oscilloscope implements MessageListener
     public static void main(String[] args)
     {
         Oscilloscope me = new Oscilloscope();
-        me.run();
+        int mode = Integer.parseInt(args[0]);
+        me.run(mode);
     }
-
 
     void outputMsgToConsole(OscilloscopeMsg omsg) 
     {

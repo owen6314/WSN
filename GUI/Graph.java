@@ -194,18 +194,18 @@ class Graph extends JPanel
             double gy = -1;
             int sy = -1;
             SensorData sample = parent.parent.data.getData(nodeId, gx);
-
+            //get visual mode to see which data to use
             if (sample != null) 
             {
                 switch (parent.getVisualMode())
                 {
-                    case Window.TEMPERATURE:
+                    case 0:
             		    gy =sample.getPhysicalTemp();
             		    break;
-            	    case Window.HUMIDITY:
+            	    case 1:
             		    gy = sample.getPhysicalHumid();
             		    break;
-            	    case Window.LIGHT:
+            	    case 2:
             		    gy = sample.getPhysicalLight();
             		    break;
                 }

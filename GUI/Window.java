@@ -1,13 +1,4 @@
-/*
- * Copyright (c) 2006 Intel Corporation
- * All rights reserved.
- *
- * This file is distributed under the terms in the attached INTEL-LICENSE     
- * file. If you do not find these files, copies can be found by writing to
- * Intel Research Berkeley, 2150 Shattuck Avenue, Suite 1300, Berkeley, CA, 
- * 94704.  Attention:  Intel License Inquiry.
- */
-
+//mode: TEMPERATURE = 0  HUMIDITY = 1  LIGHT = 2;
 import javax.swing.*;
 import javax.swing.table.*;
 import javax.swing.event.*;
@@ -32,16 +23,12 @@ class Window
 
     // choose which data to show
     int visualMode;
-    public static final int TEMPERATURE = 0;
-    public static final int HUMIDITY = 1;
-    public static final int LIGHT = 2;
-
     public static final int[] yMinValue = {-450, 0, -20};
     public static final int[] yMaxValue = {10000, 1000, 200};
 
-    Window(Oscilloscope parent) 
+    Window(Oscilloscope parent, int mode) 
     {
-    	visualMode = LIGHT;
+    	setVisualMode(mode);
 		this.parent = parent;
     }
 
@@ -232,7 +219,6 @@ class Window
 		graph.setScale(graph.scale);
 		xSlider.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
-			    //if (!xSlider.getValueIsAdjusting())
 			    graph.setScale((int)xSlider.getValue());
 			}
 		    });

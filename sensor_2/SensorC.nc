@@ -199,6 +199,7 @@ implementation
       humidity = val;
       humidity = -4 + 4*val/100 + (-28/1000/10000)*(val*val);
       humidity = (temperature-25)*(1/100+8*val/100/1000)+humidity;
+      printf("humidity is %d", humidity);
     }
     else humidity = 0xffff;
   }
