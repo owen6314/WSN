@@ -110,10 +110,13 @@ implementation
   message_t* receive(message_t *msg, void *payload, uint8_t len) 
   {
     message_t *ret = msg;
-    //use printf library to deliver message
-    //SensorMsg* btrpkt = (SensorMsg*)payload;
-    //printf("from : %d, number: %d, temp: %d, humi: %d, lght: %d\n", 
-    //btrpkt->node_id, btrpkt->sequence_number, btrpkt->temperature, btrpkt->humidity, btrpkt->light_intensity);
+    SensorMsg* btrpkt_receive = (SensorMsg*)payload;
+
+    // if get other package, do nothing
+    if(len != sizeof(SensorMsg) || btrpkt_receive -> token != TOKEN)
+    {
+      return msg;
+    }
     call Leds.led2Toggle();
     atomic
     {

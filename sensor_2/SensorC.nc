@@ -77,18 +77,22 @@ implementation
   
   message_t* receive(message_t *msg, void *payload, uint8_t len) 
   {
-    SensorMsg* btrpkt_receive;
     message_t *ret = msg;
+    SensorMsg* btrpkt_receive;
+    btrpkt_receive = (SensorMsg*)payload;
 
-    if (len == sizeof(SensorMsg)) 
+    // if get other package, do nothing
+    if(len != sizeof(SensorMsg) || btrpkt_receive-> token != TOKEN)
     {
-      btrpkt_receive = (SensorMsg*)payload;
-      if (btrpkt_receive->version > local_version)
-      {
-        local_version = btrpkt_receive->version;
-        current_sample_period = btrpkt_receive->interval;
-        call SampleTimer.startPeriodic(current_sample_period);
-      }
+      return msg;
+    }
+
+    //update interval if receive a newer version
+    if (btrpkt_receive->version > local_version)
+    {
+      local_version = btrpkt_receive->version;
+      current_sample_period = btrpkt_receive->interval;
+      call SampleTimer.startPeriodic(current_sample_period);
     }
     atomic if (!radioFull)
     {

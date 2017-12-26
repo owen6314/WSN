@@ -8,11 +8,14 @@ enum {
     AM_SENSORMSG = 0x93, 
 	AM_SENSOR_TO_SENSOR = 6,
 	AM_BASE_TO_SENSORS = 10,
-	AM_BASE_TO_PC = 11
+	AM_BASE_TO_PC = 11,
+	// TOKEN
+	TOKEN = 0x6314,
  };
 
 typedef nx_struct SensorMsg 
 {
+	nx_uint16_t token;
 	nx_uint16_t version;  //包的版本
 	nx_uint16_t interval; // 采样间隔
 	nx_uint16_t node_id;  
