@@ -8,7 +8,7 @@ implementation {
   components LedsC;
   components SensorC as App;
   components new TimerMilliC() as SampleTimer;
-  components ActiveMessageC as Radio;
+  components CC2420ActiveMessageC as Radio;
   components new HamamatsuS1087ParC();
   components new SensirionSht11C();
   components PrintfC;
@@ -23,6 +23,7 @@ implementation {
   App.RadioReceive -> Radio.Receive;
   App.RadioPacket -> Radio;
   App.RadioAMPacket -> Radio;
+  App.PacketLink -> Radio;
   App.SampleTimer -> SampleTimer;
   App.readTemp -> SensirionSht11C.Temperature;
   App.readHumidity -> SensirionSht11C.Humidity;

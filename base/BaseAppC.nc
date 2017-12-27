@@ -9,7 +9,7 @@ implementation {
   components MainC;
   components LedsC;
   components BaseC as App;
-  components ActiveMessageC as Radio;
+  components CC2420ActiveMessageC as Radio;
   components SerialActiveMessageC as Serial;
 
   //debug

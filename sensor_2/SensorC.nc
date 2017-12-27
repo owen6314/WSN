@@ -18,6 +18,7 @@ module SensorC
     interface Receive as RadioReceive[am_id_t id];
     interface Packet as RadioPacket;
     interface AMPacket as RadioAMPacket;
+    interface PacketLink;
   }
 }
 implementation 
@@ -150,6 +151,9 @@ implementation
 
     msg = radioQueue[radioOut];
     len = call RadioPacket.payloadLength(msg);
+
+    call PacketLink.setRetries(msg, 100); //set retries
+    call PacketLink.setRetryDelay(msg, 5); //set delay
 
     if (call RadioSend.send[AM_SENSOR2_TO_SENSOR1](1, msg, sizeof(SensorMsg)) == SUCCESS)
     {

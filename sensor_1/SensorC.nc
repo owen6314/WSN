@@ -18,6 +18,7 @@ module SensorC
     interface Receive as RadioReceive[am_id_t id];
     interface Packet as RadioPacket;
     interface AMPacket as RadioAMPacket;
+    interface PacketLink;
   }
 }
 
@@ -63,6 +64,8 @@ implementation
     {
       radioFull = FALSE;
       call SampleTimer.startPeriodic(current_sample_period);
+
+
     }
   }
   event void RadioControl.stopDone(error_t error) {}
@@ -128,6 +131,9 @@ implementation
 
     msg = radioQueue[radioOut];
     len = call RadioPacket.payloadLength(msg);
+
+    call PacketLink.setRetries(msg, 100); //set retries
+    call PacketLink.setRetryDelay(msg, 5); //set delay
 
     if (call RadioSend.send[AM_SENSOR1_TO_BASE](0, msg, sizeof(SensorMsg)) == SUCCESS)
       call Leds.led2Toggle();
