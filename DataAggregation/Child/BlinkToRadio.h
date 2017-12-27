@@ -18,6 +18,6 @@ typedef nx_struct source {
 
 typedef nx_struct request {
     nx_uint16_t index;
-}m_requset;
+}m_request;
 
 #endif

@@ -63,17 +63,11 @@ implementation {
     int sub_offset = 15 - offset % 16;
     return ((1 << sub_offset) & m_flag[main_offset]) != 0;
   }
+  
   void set(int offset) {
     int main_offset = offset / 16;
     int sub_offset = 15 - offset % 16;
     m_flag[main_offset] = (1 << sub_offset) | m_flag[main_offset];
-  }
-
-  void update_flag() {
-    for (; m_flag_len != m_data_len; ++m_flag_len) {
-      if (have(m_flag_len))
-      break;
-    }
   }
 
   void handle_message(m_source src) {

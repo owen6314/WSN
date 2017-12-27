@@ -129,7 +129,6 @@ implementation {
   }
 
   void cal_result() {
-    uint16_t i = 0;
     if (m_data_len != ARRAY_SIZE)
       return;
     m_ans.average = m_ans.sum / ARRAY_SIZE;
@@ -158,14 +157,15 @@ implementation {
     }
     update_flag();
     if (m_flag_len != m_data_len && !busy) {
-      m_requset *da_req = 
-      (m_requset *)(call Packet.getPayload(&pkt_req, sizeof(m_requset)));
+      
+      m_request *da_req = 
+      (m_request *)(call Packet.getPayload(&pkt_req, sizeof(m_request)));
       if (da_req == NULL) {
         return;
       }
       da_req->index = m_flag_len + 1;
       if (call AMSend.send(AM_BROADCAST_ADDR, 
-        &pkt_req, sizeof(m_requset)) == SUCCESS) {
+        &pkt_req, sizeof(m_request)) == SUCCESS) {
         busy = TRUE;
       }
     }
