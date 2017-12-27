@@ -130,8 +130,10 @@ implementation
     radioQueue[radioIn] = &pkt;
     if (++radioIn >= RADIO_QUEUE_LEN)
       radioIn = 0;
-    if (radioIn == radioOut)
-        radioFull = TRUE;
+    if (radioIn == radioOut) {
+      radioFull = TRUE;
+      call Leds.led0Toggle();
+    }
     if (!radioBusy)
     {
       post radioSendTask();
@@ -157,7 +159,7 @@ implementation
     msg = radioQueue[radioOut];
     len = call RadioPacket.payloadLength(msg);
 
-    call PacketLink.setRetries(msg, 100); //set retries
+    call PacketLink.setRetries(msg, 5); //set retries
     call PacketLink.setRetryDelay(msg, 5); //set delay
 
     if (call RadioSend.send[AM_SENSOR2_TO_SENSOR1](1, msg, sizeof(SensorMsg)) == SUCCESS)
