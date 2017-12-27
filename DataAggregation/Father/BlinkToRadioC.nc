@@ -130,19 +130,21 @@ implementation {
 
   void cal_result() {
     if (m_data_len != ARRAY_SIZE)
-      return;
+    return;
     m_ans.average = m_ans.sum / ARRAY_SIZE;
     m_ans.median = (m_data[ARRAY_SIZE / 2] + m_data[ARRAY_SIZE / 2 + 1]) / 2;
   }
 
   event void Boot.booted() {
     call AMControl.start();
-    call Timer.startPeriodic(PERIOD);
-    init();
   }
 
   event void AMControl.startDone(error_t err) {
     if (err == SUCCESS) {
+      init();
+      call Timer.startPeriodic(PERIOD);
+    }
+    else {
       call AMControl.start();
     }
   }
@@ -157,7 +159,7 @@ implementation {
     }
     update_flag();
     if (m_flag_len != m_data_len && !busy) {
-      
+
       m_request *da_req = 
       (m_request *)(call Packet.getPayload(&pkt_req, sizeof(m_request)));
       if (da_req == NULL) {
@@ -180,7 +182,7 @@ implementation {
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
     am_addr_t id = call AMPacket.source(msg);
     if (id != SERVER_ID && !(id <= MY_SUB2 && id >= MY_SUB1) && id != 0)
-      return msg;
+    return msg;
     if (id == SERVER_ID){ 
       call Leds.led0Toggle();
     }
@@ -205,7 +207,7 @@ implementation {
           da_ans->average = m_ans.average;
           da_ans->median = m_ans.median;
           printf(
-            "max=%ld, min=%ld, sum=%ld\n, average=%ld, median=%ld",
+            "max=%ld, min=%ld, sum=%ld, average=%ld, median=%ld\n",
             m_ans.max, m_ans.min, m_ans.sum, m_ans.average,
             m_ans.median);
           if (call AMSend.send(AM_BROADCAST_ADDR, 

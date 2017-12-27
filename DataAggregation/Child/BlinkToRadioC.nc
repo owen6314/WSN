@@ -89,11 +89,13 @@ implementation {
 
   event void Boot.booted() {
     call AMControl.start();
-    //init();
   }
 
   event void AMControl.startDone(error_t err) {
     if (err == SUCCESS) {
+      //init();
+    }
+    else {
       call AMControl.start();
     }
   }
@@ -110,7 +112,7 @@ implementation {
   event message_t* Receive.receive(message_t* msg, void* payload, uint8_t len){
     am_addr_t id = call AMPacket.source(msg);
     if (id != SERVER_ID && id != MY_BASE)
-      return msg;
+    return msg;
     if (len == sizeof(m_source)) {
       m_source *pkt_source = (m_source *)payload;
       call Leds.led0Toggle();
