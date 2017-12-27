@@ -28,7 +28,7 @@ class Window
 
     Window(Oscilloscope parent, int mode) 
     {
-    	setVisualMode(mode);
+    	this.visualMode = mode;
 		this.parent = parent;
     }
 
@@ -253,6 +253,7 @@ class Window
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e) { System.exit(0); }
 		    });
+		setVisualMode();
 	}
 
     /* User operation: clear data */
@@ -325,10 +326,9 @@ class Window
 					      JOptionPane.ERROR_MESSAGE);
     }
 
-    void setVisualMode(int mode) 
+    void setVisualMode() 
     {
-    	System.out.print("set visual Mode" + mode + '\n');
-        this.visualMode = mode;
+    	System.out.print("set visual Mode " + this.visualMode+ '\n');
         if (graph.setYAxis(getProperMinY(), getProperMaxY())) 
         {
     		yText.setText(graph.gy0 + " - " + graph.gy1);

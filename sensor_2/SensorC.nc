@@ -115,6 +115,7 @@ implementation
   event void SampleTimer.fired() 
   {
     SensorMsg* btrpkt = (SensorMsg*)(call RadioPacket.getPayload(&pkt, sizeof(SensorMsg)));
+    btrpkt->token = TOKEN;
     btrpkt->version = local_version;
     btrpkt->interval = current_sample_period;
     btrpkt->node_id = TOS_NODE_ID;

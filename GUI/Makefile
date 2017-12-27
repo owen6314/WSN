@@ -9,7 +9,7 @@ OscilloscopeMsg.java: Oscilloscope.h
 	mig -target=telosb -java-classname=OscilloscopeMsg java Oscilloscope.h SensorMsg -o $@
 
 Constants.java: Oscilloscope.h
-	ncg -target=telosb -java-classname=Constants java Oscilloscope.h NREADINGS DEFAULT_INTERVAL -o $@
+	ncg -target=telosb -java-classname=Constants java Oscilloscope.h NREADINGS DEFAULT_INTERVAL TOKEN -o $@
 
 Oscilloscope.class: $(wildcard *.java) $(GEN)
 	javac *.java
