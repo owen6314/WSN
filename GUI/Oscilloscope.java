@@ -123,6 +123,8 @@ public class Oscilloscope implements MessageListener
 
         omsg.set_version(version);
         omsg.set_interval(interval);
+        omsg.set_token(Constants.TOKEN);
+
         try 
         {
             mote.send(MoteIF.TOS_BCAST_ADDR, omsg);

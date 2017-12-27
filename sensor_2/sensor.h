@@ -6,11 +6,13 @@ enum {
 	DEFAULT_VERSION = 1,
 	DEFAULT_INTERVAL = 1000,
     RADIO_QUEUE_LEN = 30,
-    AM_SENSOR2_TO_SENSOR1 = 6
+    AM_SENSOR2_TO_SENSOR1 = 6,
+    TOKEN = 0x6314,
  };
 
 typedef nx_struct SensorMsg 
 {
+	nx_uint16_t token;
 	nx_uint16_t version;
 	nx_uint16_t interval;
 	nx_uint16_t node_id;
